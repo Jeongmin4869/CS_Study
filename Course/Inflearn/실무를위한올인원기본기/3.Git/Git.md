@@ -2,8 +2,8 @@
    
 ![Image](https://github.com/user-attachments/assets/cd0df8c2-2d74-499b-978b-fe247d01e73e)
 
-Git에는 크게 4가지의 작업 공간이 있다.    
-   
+## 01 - Git의 작업공간 
+      
 #### 1. Workspace
 - 작업하는 일반적인 공간
 - git을 쓰기 이전 처음 상태
@@ -27,3 +27,20 @@ Git에는 크게 4가지의 작업 공간이 있다.
 - git push 령령어로 local repository 공간에 있는 작업물을 이 공간으로 보낸다.
 - git fetch 나 git pull 명령어로 이 공간에 있는 작업물을 local repository로 가져올 수 있다.
 - Git-hub, BitBucket, GitLab등이 이 공간을 구현한 Git 호스팅 서비스이다. 
+     
+> git add : workspace -> index   
+> git commit : index -> local repository   
+> git push : local repository -> remote repository   
+> git pull, fetch : remote repository -> local repository    
+> git log : 기록된 커밋 로그 확인   
+> git status : workspace 공간에 있는 작업물 확인   
+   
+   
+--- 
+## 02 - 브랜치
+   
+<img width="968" height="496" alt="Image" src="https://github.com/user-attachments/assets/9e11dc8b-4b89-4577-912b-9233e8e3f833" />
+   
+- 브랜치는 사용자가 독립적으로 작업을 진행할 수 있도록 돕는 작업 흐름이다. 
+- 하나의 브랜치는 독립된 workspace, index, local repository, remote repository 공간을 가진다.
+- 브랜치를 이용하면 하나의 프로젝트에서 여러 사람이 동시에 본인의 작업을 진행할 수 있다. 
