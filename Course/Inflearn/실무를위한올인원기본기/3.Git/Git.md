@@ -28,12 +28,27 @@
 - git fetch 나 git pull 명령어로 이 공간에 있는 작업물을 local repository로 가져올 수 있다.
 - Git-hub, BitBucket, GitLab등이 이 공간을 구현한 Git 호스팅 서비스이다. 
      
-> git add : workspace -> index   
-> git commit : index -> local repository   
-> git push : local repository -> remote repository   
-> git pull, fetch : remote repository -> local repository    
-> git log : 기록된 커밋 로그 확인   
-> git status : workspace 공간에 있는 작업물 확인   
+```bash
+   # workspace -> index
+   git add
+
+   # index -> local repository
+   git commit
+
+   # local repository -> remote repository
+   git push
+
+   #remote repository -> local repository 
+   git pull
+   git fetch
+
+   #기록된 커밋 로그 확인
+   git log
+
+   # workspace 공간에 있는 작업물 확인
+   git status 
+```
+
    
    
 --- 
@@ -52,3 +67,190 @@
 - 각 브랜치별로 4가지 공간을 갖게 된다.
 - 협업할 때는 보통 각자 작업할 브랜치를 만들고 그 위에서 작업한다.
 - Remote repository에서 각자 브랜치 작업을 리뷰받은 뒤 메인 브랜치로 머지한다. 
+    
+   
+## 03 - [log & reflog] 이전 commit 내역들과 변경사항을 확인
+   
+### HEAD
+- HEAD는 커밋 내역에서 현재 커밋(보통 가장 최신 커밋)을 가리키는 심볼릭 링크(포인터)이다.
+- 보통 명령어에 커밋ID 대신 HEAD 포인터를 활용한다.
+- HEAD 이전 커밋들을 확인하고 싶을 땐 HEAD^ 혹은 HEAD~으로 포인팅이 가능하다.
+- HEAD로부터 3개 이전 커밋에 접근하고 싶다면 HEAD^^^ 혹은 HEAD~3으로 표헌할 수 있다. 
+    
+   
+    
+### git log
+- 커밋 내역을 확인
+   
+```bash
+$ git log
+
+commit c008c4785eeb14a395b4aa6cf9fa3b9e5896f5a4 (HEAD -> main)
+Author: grab <grab@gmail.com>
+Date:   Tue Aug 17 21:21:45 2021 +0900
+
+    a 파일을 수정한다
+
+commit b014111c82fa239b771b2b6d6bdc567282e7b325
+Author: grab <grab@gmail.com>
+Date:   Tue Aug 17 20:34:32 2021 +0900
+
+    a 파일을 추가한다
+```
+   
+- oneline으로 간략하게 보거나, -n으로 특정 개수만의 커밋 내역을 확인할 수 있다.
+    
+```bash
+$ git log --oneline
+
+c008c47 (HEAD -> main) a 파일을 수정한다
+b014111 a 파일을 추가한다
+
+$ git log -n 10
+# 최근 10개의 커밋들만 보여줍니다. 
+```
+
+- git을 그래프 형태로 확인할 수 있다.
+     
+```bash
+git log --oneline --decorate --graph
+```
+
+       
+### git show
+- 가장 최근 커밋의 정보를 확인할 수 있다. 
+- 특정 커밋 정보를 확인하려면 git show 커밋해시를 붙이면 된다.
+     
+```bash
+$ git show
+
+commit c008c4785eeb14a395b4aa6cf9fa3b9e5896f5a4 (HEAD -> main)
+Author: grab <grab@gmail.com>
+Date:   Tue Aug 17 21:21:45 2021 +0900
+
+    a 파일을 수정한다
+
+diff --git a/a b/a
+index e69de29..9e365c8 100644
+--- a/a
++++ b/a
+@@ -0,0 +1 @@
++this is a
+
+$ git show c008c4785eeb14a395b4aa6cf9fa3b9e5896f5a4
+$ git show HEAD^ #HEAD 포인터 활용
+
+```
+   
+       
+### git reflog
+- git reflog명령어로 git reset, git rebase 명령어를 통해 삭제된 커밋을 포함한 모든 커밋 히스토리를 확인할 수 있다. 
+- git은 이전 명령어(ex. git reset —hard)를 취소하고 싶을 때 유용하다. 
+   
+```bash
+$ git reflog
+
+c008c47 (HEAD -> main) HEAD@{0}: commit: a 파일을 수정한다
+b014111 HEAD@{1}: commit (initial): a 파일을 추가한다
+
+$ git reset 0379a06 --hard
+
+HEAD의 현재 위치는 0379a06입니다 b 파일을 추가한다
+
+$ git reflog
+
+0379a06 (HEAD - my-branch) HEAD@{0}: reset: moving to 0379a069b014afc2c256f3d94c4fb93fd833003e
+c7591af HEAD@{1}: checkout: moving from main to my-branch
+9cb8a3b (main) HEAD@{2}: rebase (finish): returning to refs/heads/main
+9cb8a3b (main) HEAD@{3}: rebase (pick): d 파일을 추가한다
+c7591af HEAD@{4}: rebase (start): checkout my-branch
+31b3b73 HEAD@{5}: reset: moving to 31b3b73dc282d37a30b9d0242f18dfaf69878c0b
+
+$ git reset c7591af --hard
+```
+      
+   
+---       
+## 04 - [restore & reset] 변경사항, 커밋을 초기화
+   
+- Git reset 명령어는 특정 커밋의 시점으로 돌아갈 때 해당 커밋 이후의 작업물을 어떻게 처리하느냐에 따라 3가지 옵션이 있다. 
+   - hard
+   - mixed
+   - soft
+   
+   
+### git reset —hard {커밋ID}
+- 특정 커밋 시점으로 돌아갈 때 해당 커밋 이후 만들어진 모든 작업물을 삭제한다.
+- 현재 작업한 파일들을 모두 날리고 이전 커밋으로 돌아가고 싶을 때 사용한다.
+- 기존에 작성하먼 변경사항들도 모두 이전으로 돌아가기 때문에 주의가 필요하다 
+   
+```bash
+$ git reset --hard b014111 
+
+HEAD의 현재 위치는 b014111입니다 a 파일을 추가한다
+
+$ git log --oneline
+
+b014111 a 파일을 추가한다
+
+$ git status
+
+현재 브랜치 main
+커밋할 사항 없음, 작업 폴더 깨끗함
+```
+   
+   
+### git reset —mixed {커밋ID}
+- 특정 커밋 시점으로 돌아갈 때, 해당 커밋 이후 모든 작업물은 workspace 공간에 unstaged 상태로 남게 된다. 
+- mixed옵션은 기본옵션으로 git reset만 실행해도 결과는 동일하다.
+     
+```bash
+$ git reset b014111 --mixed
+
+리셋 뒤에 스테이징하지 않은 변경 사항:
+M	a
+
+$ git log --oneline
+
+b014111 a 파일을 추가한다
+
+$ git status
+
+현재 브랜치 main
+커밋하도록 정하지 않은 변경 사항:
+  (무엇을 커밋할지 바꾸려면 "git add <파일>..."을 사용하십시오)
+  (use "git restore <file>..." to discard changes in working directory)
+	수정함:        a
+
+커밋할 변경 사항을 추가하지 않았습니다 ("git add" 및/또는 "git commit -a"를 사용하십시오)
+```
+   
+   
+### git reset —soft {커밋ID}
+- 특정 커밋 시점으로 돌아갈 때, 해당 커밋 이후 모든 작업물은 index 공간에 staged상태로 남게 된다.
+   
+```bash
+$ git reset b014111 --soft
+
+$ git log --oneline
+
+b014111 a 파일을 추가한다
+
+$ git status
+
+현재 브랜치  main
+커밋할 변경 사항:
+  (use "git restore --staged <file>..." to unstage)
+	수정함:        a
+```
+   
+   
+### git restore {파일경로}
+- 특정 파일의 변경사항을 제거하고 HEAD 기준으로 되돌리고 싶을 때 restore을 사용할 수 있다. 
+- workspace에 있는 변경 사항을 update 기준으로 되돌릴 때 사용한다. 
+- Git restore는 git reset —hard HEAD와 비슷한 결과를 내지만, restore는 새 파일의 변경사항 (새 파일을 추가한 사실)은 되돌릴 수 없다.
+     
+```bash
+# 아직 stage(index)에 올라가지 않은 README.md 파일을 되돌릴 때  
+$ git restore README.md
+```
