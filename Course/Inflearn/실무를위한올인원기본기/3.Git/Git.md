@@ -254,3 +254,85 @@ $ git status
 # 아직 stage(index)에 올라가지 않은 README.md 파일을 되돌릴 때  
 $ git restore README.md
 ```
+   
+   
+--- 
+## 05 - [stash] 변경사항 임시저장
+   
+### git stash
+- 수정 내용을 임시 저장하는 명령어
+- 브랜치를 전환해서 작업할 때 사용
+- git stash 명령어를 쓰면 현재 변경사항을 별도의 스택 공간에 빼두게 된다. 
+   
+```bash
+$ git stash
+Saved working directory and index state WIP on my-branch: b014111 a 파일을 추가한다
+
+$ git stash -m "OOO 변경 사항..."
+
+$ git switch main
+'main' 브랜치로 전환합니다
+```
+   
+   
+### git stash pop
+- 스택에 넣었던 작업 내역을 불러온다 
+   
+```bash
+$ git switch my-branch
+'my-branch' 브랜치로 전환합니다
+
+$ git stash pop
+
+현재 브랜치 my-branch
+커밋하도록 정하지 않은 변경 사항:
+  (무엇을 커밋할지 바꾸려면 "git add <파일>..."을 사용하십시오)
+  (use "git restore <file>..." to discard changes in working directory)
+	수정함:        a
+
+커밋할 변경 사항을 추가하지 않았습니다 ("git add" 및/또는 "git commit -a"를
+사용하십시오)
+Dropped refs/stash@{0} (762134d031bbb57b72183e4001ac283b266d3953)
+```
+   
+   
+### git stash apply
+- git stash pop 과 비슷한 명령어. pop은 스택 공간에서 내역을 제거하고 apply는 제거하지 않는다.
+- git stash list로 봐도 작업 내역이 그대로 남아있다.
+- 작업 내역 재사용이 가능하다. 
+   
+   
+---    
+## 06 - [revert] 이전 커밋의 변경사항 복구
+   
+### git revert {커밋ID}
+- 기존 커밋들은 지우지 않고 현재 커밋 위로 이전 커밋 내용을 다시 되돌리는 커밋을 만든다, 
+   
+```bash
+$ git log --oneline
+
+875a6e6 b 파일을 추가한다
+1fc71a0 a 파일을 수정한다
+b014111 a 파일을 추가한다
+
+$ git revert 1fc71a0
+
+Revert "a 파일을 수정한다"
+This reverts commit 1fc71a0e2b3839cdd0ada557df823609f234610a.
+
+# 변경 사항에 대한 커밋 메시지를 입력하십시오. '#' 문자로 시작하는
+# 줄은 무시되고, 메시지를 입력하지 않으면 커밋이 중지됩니다.
+#
+# 현재 브랜치 main
+# 커밋할 변경 사항:
+#       수정함:        a
+#
+
+$ git log --oneline
+
+dea542b This reverts commit 1fc71a0e2b3839cdd0ada557df823609f234610a.
+875a6e6 b 파일을 추가한다
+1fc71a0 a 파일을 수정한다
+b014111 a 파일을 추가한다
+
+```
