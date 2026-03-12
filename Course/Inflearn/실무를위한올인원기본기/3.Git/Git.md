@@ -336,3 +336,50 @@ dea542b This reverts commit 1fc71a0e2b3839cdd0ada557df823609f234610a.
 b014111 a 파일을 추가한다
 
 ```
+   
+   
+## 07 - [amend commit & rebase] 이전 커밋 내용 변경
+   
+- 커밋 메세지를 수정하고 싶거나 변경된 파일의 일부를 되돌릴 때 사용
+- Git commit —amend : 현재 작업중인 커밋(HEAD)을 수정
+- Git rebase —interactive : HEAD 아래에 있는 커밋들 중 일부를 수정하거나 변경할 때 사용
+- Git revert는 대상 커밋을 되돌리는 새로운 커밋을 만드는 기능이며, 커밋 자체를 변경하지는 못한다. 
+   
+   
+### git commit —amend
+-  —amend는 현재 커밋(HEAD)위에 변경사항을 덮어씌울 때 사용하는 옵션이다.
+-  커밋을 한 후 추가적인 변경사항이 생겼거나 커밋 메세지를 변경하고 싶을 때 사용한다.
+-  커밋 메세지만 수정하고 싶다면 변경사항 없이 바로 git commit —amend를 사용한다
+-  커밋 메세지의 수정을 필요로 하지 않는 경우 —no-edit 옵션을 붙인다 
+   
+   
+```bash
+$ git add .
+
+# 만약 커밋 메시지를 변경하고 싶다면 텍스트를 수정한 후 저장을 하면 됩니다.
+# 변경이 필요 없다면 바로 :wq로 저장을 하면 됩니다. 
+$ git commit --amend
+
+feat: 기존 커밋 메시지...
+  
+# 변경 사항에 대한 커밋 메시지를 입력하십시오. '#' 문자로 시작하는
+# 줄은 무시되고, 메시지를 입력하지 않으면 커밋이 중지됩니다.
+#
+# 시각:      Sun Sep 26 01:14:25 2021 +0900
+#
+# 현재 브랜치 main
+# 브랜치가 'origin/main'보다 1개 커밋만큼 앞에 있습니다.
+#   (로컬에 있는 커밋을 제출하려면 "git push"를 사용하십시오)
+...
+
+```
+   
+   
+```bash
+$ git commit --amend --no-edit
+
+[main ed58623] feat: 기존 커밋 메시지...
+Date: Sun Sep 26 01:14:25 2021 +0900
+8 files changed, 112 insertions(+), 107 deletions(-)
+...
+```
