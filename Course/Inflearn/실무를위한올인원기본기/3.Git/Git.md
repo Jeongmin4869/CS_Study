@@ -383,3 +383,135 @@ Date: Sun Sep 26 01:14:25 2021 +0900
 8 files changed, 112 insertions(+), 107 deletions(-)
 ...
 ```
+   
+   
+### git rebase —interactive {커밋ID}
+- git rebase는 브랜치 병합 과정에서 자주 사용된다.
+- 동시에 과거 커밋 히스토리를 변경할 수 있는 기능을 —interavtive 옵셕을 통해 제공한다.
+- 커밋 히스토리의 수정 범위는 현재 최신 커밋부터 {커밋ID}바로 위 커밋까지 적용된다.
+   
+```bash
+
+$ git log --oneline
+
+bec1c83 (HEAD -> main) c를 추가한다
+bdc0d87 b를 추가한다
+1dee32c a를 추가한다
+
+
+# 두번째커밋 bdc0d87에 b2파일 추가, 마지막 커밋에 c파일 삭제
+
+$ git rebase --interactive 1dee32c # 혹은 HEAD^^ , HEAD~2 로도 표현
+
+edit bdc0d87 b를 추가한다
+drop bec1c83 c를 추가한다
+
+# Rebase 1dee32c..bec1c83 onto 1dee32c (2 commands)
+#
+# Commands:
+# p, pick <commit> = use commit
+# r, reword <commit> = use commit, but edit the commit message
+# e, edit <commit> = use commit, but stop for amending
+# s, squash <commit> = use commit, but meld into previous commit
+# f, fixup <commit> = like "squash", but discard this commit's log message
+# x, exec <command> = run command (the rest of the line) using shell
+# b, break = stop here (continue rebase later with 'git rebase --continue')
+# d, drop <commit> = remove commit
+# l, label <label> = label current HEAD with a name
+# t, reset <label> = reset HEAD to a label
+# m, merge [-C <commit> | -c <commit>] <label> [# <oneline>]
+# .       create a merge commit using the original merge commit's
+# .       message (or the oneline, if no original merge commit was
+# .       specified). Use -c <commit> to reword the commit message 
+
+```
+   
+   
+- Command
+ - pick : 변경사항 없이 커밋을 그대로 유지한다.
+ - edit : 해당 커밋의 내용을 수정할 수 있으며 커밋 메시지도 변경할 수 있다.
+ - reword : 해당 커밋의 메시지만 수정한다.
+ - drop : 해당 커밋을 히스토리에서 제거한다.
+   
+Interactive rebase는 커밋을 하나씩 다시 적용하는 방식으로 동작하며,   
+각 command가 적용되는 커밋으로 HEAD가 이동한다.   
+   
+특히 edit을 선택하면 Git이 해당 커밋에서 멈추며,   
+이 상태에서 코드를 자유롭게 추가/삭제/수정할 수 있다.   
+   
+   
+```bash
+edit bdc0d87 b를 추가한다 # 약자로 e를 넣어도 무방합니다. 
+pick bec1c83 c를 추가한다
+
+#저장 후 
+bdc0d87...  b를 추가한다 # 해당 위치에서 멈췄습니다
+You can amend the commit now, with
+
+  git commit --amend
+
+Once you are satisfied with your changes, run
+
+  git rebase --continue
+
+$ git commit --amend
+
+b와 b2를 추가한다  
+
+# 변경 사항에 대한 커밋 메시지를 입력하십시오. '#' 문자로 시작하는
+# 줄은 무시되고, 메시지를 입력하지 않으면 커밋이 중지됩니다.
+#
+# 시각:      Sun Sep 26 16:59:27 2021 +0900
+#
+```
+
+- git commit —amend : 현재 최신 커밋(HEAD)에 덮어 씌우는 작업을 하게 된다.
+
+```bash
+$ git commit --amend
+
+b와 b2를 추가한다  
+
+# 변경 사항에 대한 커밋 메시지를 입력하십시오. '#' 문자로 시작하는
+# 줄은 무시되고, 메시지를 입력하지 않으면 커밋이 중지됩니다.
+#
+# 시각:      Sun Sep 26 16:59:27 2021 +0900
+#
+
+```
+
+- git rebase —continue : commit을 마친 후 변경사항을 적용했다면 다음 작업 대상으로 넘어간다 
+
+```bash
+ $ git rebase --continue
+
+8f820c0...  c를 추가한다 위치에서 멈췄습니다
+You can amend the commit now, with
+
+  git commit --amend
+
+Once you are satisfied with your changes, run
+
+  git rebase --continue
+
+```
+
+- git rebase —skip : 커밋의 변경 사항을 주지 않고 다음으로 넘어간다. 
+
+```bash
+ $ git rebase --skip 
+
+# 다음 변경할 commit으로 HEAD가 옮겨갑니다.
+
+```
+
+ - git rebase —abort  : rebase하는 과정 전체를 취소
+
+```bash
+$ git rebase --abort
+
+# rebase -i를 주기 전 원래 환경으로 돌아옵니다. 
+
+```
+
+   
