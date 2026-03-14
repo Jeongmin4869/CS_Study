@@ -513,5 +513,172 @@ $ git rebase --abort
 # rebase -i를 주기 전 원래 환경으로 돌아옵니다. 
 
 ```
+   
+   
+## 08 - [squash & rebase merge] 커밋 방식에 따른 브랜치
+   
+브랜치를 합치는 방법
+- 기본 Merge
+- Squash & Merge
+- Rebase & Merge
+   
+<img width="718" height="376" alt="Image" src="https://github.com/user-attachments/assets/e87ef42c-8671-48ff-b592-6c40fc8d3814" />
+   
+      
+```bash 
+$ git switch feature-branch
+$ git rebase main
 
+Successfully rebased and updated refs/heads/feature-branch.
+
+$ git log --oneline
+
+9cb8a3b (HEAD -> main, feature-branch) a 파일을 추가한다
+c7591af d 파일을 추가한다
+fc25d18 c 파일을 추가한다
+0379a06 b 파일을 추가한다
+b014111 a 파일을 추가한다
+```
+   
+   
+### git merge {브랜치이름}
+- 가장 기본적인 머지 방식
+- 브랜치 생성 후 main에 추가 커밋이 없을 경우 fast-forward. Merge 커밋이 생기지 않고 브랜치의 모든 커밋이 main 브런치로 들어가게 된다.
+- 머지 커밋을 통해 명시적으로 브랜치의 병합이 있었다는 것을 표시하고 싶을 때 git merge 방식을 사용한다. 
+   
+```bash
+$ git switch -c feature-branch
+
+새로 만든 'feature-branch' 브랜치로 전환합니다
+
+$ git log --oneline
+
+7404163 (HEAD -> main, feature-branch) c 파일을 추가한다
+c315709 b 파일을 추가한다
+b014111 a 파일을 추가한다
+
+# ... 파일 수정 작업
+$ git commit -m "a 파일을 수정합니다"
+
+ 
+$ git switch main
+
+'main' 브랜치로 전환합니다
+
+$ git merge feature-branch
+
+업데이트 중 b014111..c7591af
+Fast-forward
+ a | 1 +
+ b | 0
+ c | 0
+ 3 files changed, 1 insertion(+)
+ create mode 100644 b
+ create mode 100644 c
+
+```
+   
+- mani브랜치에 새로운 커밋이 생겼을 경우, git merge명령어를 입력하면 merge를 위한 머지 커밋이 생성된다. 
+   
+```bash
+$ git merge feature-branch
+
+Merge branch 'feature-branch'
+# Please enter a commit message to explain why this merge is necessary,
+# especially if it merges an updated upstream into a topic branch.
+#
+# Lines starting with '#' will be ignored, and an empty message aborts
+# the commit.
+Merge made by the 'recursive' strategy.
+ a | 1 +
+ b | 0
+ c | 0
+ 3 files changed, 1 insertion(+)
+ create mode 100644 b
+ create mode 100644 c
+
+# git log로 확인하면 Merge 내용을 나타내는 커밋이 생성되게 됩니다.
+$ git log --oneline
+
+85c04dc (HEAD -> main) Merge branch 'feature-branch'
+31b3b73 d 파일을 추가한다
+c7591af (feature-branch) a 파일을 수정한다
+fc25d18 c 파일을 추가한다
+0379a06 b 파일을 추가한다
+b014111 a 파일을 추가한다
+
+```
+   
+   
+### Merge conflict
+- 머지할 때 두 브랜치가 다음과 같은 상황일 때 git은 충돌이 발생하며, 이를 merge conlict라고 한다.
+	- 한 파일의 같은 라인을 수정했을 때
+	- 한 브랜치에서는 파일을 삭제하고, 한 브랜치에서는 파일을 변경할 때 
+- 이 경우 conflict가 난 파일을 해결(resolve) 한 후 merge를 진행해야 한다. 
+   
+   
+### git merge {브랜치 이름} —squash
+- 머지 커밋을 만들지 않고 변경사항만 병합할 경우 사용
+- 머지커밋을 남기지 않으면서 해당 브랜치에서 작업한 모든 내용을 하나의 커밋으로 묶는다.
+- 작업한 커밋들을 하나의 커밋으로 만들어 main브런치에서 합친다 .
+- 하나의 커밋으로 묶어 병합하면 브랜치의 구조를 깔끔하게 유지할 수 있다
+- 다만 롤백 처리를 할 때 커밋을 한번에 처리하는 게 불가능해지는 문제가 있다. 
+   
+```bash
+$ git merge feature-branch --squash
+
+커밋 합치기 -- HEAD를 업데이트하지 않습니다
+자동 병합이 잘 진행되었습니다. 요청한대로 커밋 전에 중지합니다
+
+$ git commit -m "feature-branch 브랜치에서 작업한 내용을 합친다" 
+
+...
+[main 1b8874f] feature-branch 브랜치에서 작업한 내용을 합친다
+ 3 files changed, 1 insertion(+)
+ create mode 100644 b
+ create mode 100644 c
+
+$ git log --oneline
+
+1b8874f (HEAD -> main) feature-branch 브랜치에서 작업한 내용을 합친다
+31b3b73 d 파일을 추가한다
+b014111 c 파일을 추가한다
+b014111 b 파일을 추가한다
+b014111 a 파일을 추가한다
+
+```
+   
+   
+### git rebase {브랜치 이름}
+- merge할때 merge커밋을 남기지 않으면서도, merge되는 브랜치의 모든 커밋 내역을 가져온다.
+- 두 머지 방식과 다르게 rebase의 경우 병합이 될 브런치에서 git rebase {대상브랜치}를 사용한다.
+- git rebase는 별다른 커밋을 생성하지 않고 커밋 구조를 변경한다.
+- 코드를 보는 입장에서는 깔끔할 수 있지만, 브랜치의 병합 히스토리가 명시적으로 잘 남아있지 않아 히스토리 추적 시 불편할 수 있다. 
+   
+```bash
+
+$ git log --oneline
+
+c7591af (feature-branch) a 파일을 수정한다
+fc25d18 c 파일을 추가한다
+0379a06 b 파일을 추가한다
+b014111 a 파일을 추가한다
+
+$ git switch feature-branch
+$ git rebase main 
+
+Successfully rebased and updated refs/heads/feature-branch.
+
+$ git switch main
+# main이 HEAD를 바라보고 있지 않을 경우 merge
+$ git merge feature-branch 
+$ git log --oneline
+
+9cb8a3b (HEAD -> main, feature-branch) a 파일을 추가한다
+c7591af d 파일을 추가한다
+fc25d18 c 파일을 추가한다
+0379a06 b 파일을 추가한다
+b014111 a 파일을 추가한다
+
+```
    
