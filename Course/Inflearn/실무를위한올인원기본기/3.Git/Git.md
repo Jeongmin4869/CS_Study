@@ -682,3 +682,70 @@ b014111 a 파일을 추가한다
 
 ```
    
+   
+## 09 - [cherry-pick] 다른 브랜치의 커밋 가져오기 
+   
+### Git cherry-pick {커밋ID}
+- 다른 브랜치의 일부 커밋을 현재 브랜치로 가져온다. 
+- 변경사항을 복사해서 새로운 커밋을 만드는 것이기 때문에 커밋 해시는 변경된다. 
+
+```bash
+
+$ git switch -c my-branch
+
+새로 만든 'my-branch' 브랜치로 전환합니다
+
+$ touch b
+$ git add b
+$ git commit -m "b 파일을 추가한다"
+
+$ touch c
+$ git add c
+$ git commit -m "c 파일을 추가한다"
+
+$ git log --oneline
+
+7404163 (HEAD -> my-branch) c 파일을 추가한다
+c315709 b 파일을 추가한다
+b014111 (main) a 파일을 추가한다
+
+$ git switch main
+
+'main' 브랜치로 전환합니다
+
+# 7404163 커밋을 현재 브랜치로 가져옵니다.
+$ git cherry-pick 7404163
+
+[main 51488a2] c 파일을 추가한다
+ Date: Fri Aug 20 23:13:13 2021 +0900
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 c
+
+```   
+   
+   
+# 2. 충돌(conflict) 다루기 
+   
+## 01 - merge 과정에서의 충돌 
+- 일반적으로 같은 파일에서 동일한 라인을 변경한 두 커밋들을 병합할 때 충돌이 발생한다. 
+= 충돌이 발생하면 conflict-maker를 통해 구분이 가능하다. 
+	- <<<<<<< HEAD 와 ======= 사이에 있는 변경사항 : merge를 진행한 브랜치의 커밋 변경사항
+	- ======= 와 >>>>>>>{커밋해시} 사이에 있는 변경사항 : merge할 타겟 브랜치의 커밋 변경사항 
+   
+```bash
+<<<<<<< HEAD
+first line
+=======
+new line
+>>>>>>> 671f6f8 (conflict2 파일을 추가한다)
+```
+   
+- 충돌을 해결하기 위해선, conflict maker를 지워주고 어떤 변경사항을 채택할지 결정한다. 
+   
+```bash
+# 충돌 해결 후
+$ git add .
+$ git commit
+```
+   
+- git abort :  충돌 발생 상황을 되돌린다 
