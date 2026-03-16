@@ -749,3 +749,47 @@ $ git commit
 ```
    
 - git abort :  충돌 발생 상황을 되돌린다 
+      
+   
+### 02- 하나의 브랜치를 함께 사용하다가 충돌이 나는 경우
+- A개발자와 B개발자가 같은 branch를 바라보고 작업하던 도중, A개발자가 remote repository에 먼저 commit한 경우
+- B개발자가 동일하게 commit을 만든 상황에서 remote repository에 push를 한다면 문제 발생
+- 바로 push를 할 수 없기에 pull을 해야하지만 이 경우 merge commit이 생기게 된다.
+- merge커밋 없이 순차적으로 커밋을 남기고 싶을 경우 pull —rebase를 사용한다.
+- pull을 할 때 rebase 옵션을 줘서 커밋의 순서를 일정하게 보장한 후 push를 바로 진행할 수 있다. 
+   
+#### Pull
+- 원격 저장소의 변경사항을 가져와서(patch) 현재 브랜치에 병합(merge)하는 명령어
+- 다른 사람이 원격 저장소에 올린 최신 코드를 내 로컬 저장소에 반영할 때 사용
+- Git pull -> git fetch + git merge
+- 현재 브랜치가 추적하고 있는 원격 브랜치에서 변경사항을 가져와 병합한다. 
+   
+```bash
+git pull origin main
+#origin 저장소의 main 브랜치를 가져와서 현재 브랜치에 병합한다.
+
+A --- B --- C (local main)
+           \
+            D --- E (origin/main)
+
+A --- B --- C -------- M (merge commit)
+           \          /
+            D ------ E
+```
+   
+   
+#### pull —rebase 
+   
+```bash
+# rebase 옵션을 통해 pull을 하면 remote branch의 commit들을 pull한 후, local branch의 commit들을 그 위에 쌓습니다(rebase)
+$ git pull origin {브랜치명} —rebase
+
+A --- B --- C (local)
+           \
+            D --- E (origin)
+
+git pull --rebase
+
+A --- B --- D --- E --- C'
+
+```
