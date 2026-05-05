@@ -1,0 +1,8 @@
+#!/Users/strongmin/workspace/CS_Study/Course/Inflearn/실무를위한올인원기본기/8.테스트코드적용/PythonProject/venv/bin/python3
+# -*- coding: utf-8 -*-
+import re
+import sys
+from pygments.cmdline import main
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(main())

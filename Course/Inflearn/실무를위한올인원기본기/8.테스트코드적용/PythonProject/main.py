@@ -115,8 +115,8 @@ class User:
         else:
             raise Exception("잔돈이 부족합니다")
 
-    def _check_money(self, money):
-        return self._money >= money
+    def _check_money_enough(self, price):
+        return self._money >= price
 
     def _give_money(self, money):
         self._money -= money
