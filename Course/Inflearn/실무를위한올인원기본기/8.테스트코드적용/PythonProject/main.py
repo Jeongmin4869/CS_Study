@@ -55,13 +55,13 @@ class GrabStore(Store):
         self._products = products
 
     def show_product(self, product_id):
-        return self._products[product_id]
+        return self._products.get(product_id, None)
 
     def sell_product(self, product_id, money):
         #validation 코드 최소화
         product = self.show_product(product_id=product_id)
         if not product:
-            return Exception("상품이 존재하지 않습니다")
+            raise Exception("상품이 존재하지 않습니다")
 
         self._take_money(money=money)
         try:
@@ -119,6 +119,8 @@ class User:
         return self._money >= price
 
     def _give_money(self, money):
+        if not self._check_money_enough(price=money):
+            raise Exception("돈이 부족합니다 ")
         self._money -= money
 
     def _take_money(self, money):

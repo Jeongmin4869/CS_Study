@@ -1,3 +1,5 @@
+import pytest
+
 
 def test_check_money(user):
     cheap_price = 500
@@ -14,3 +16,8 @@ def test_give_money_cheaper(user):
     pre_money = user._money
     user._give_money(money=price)
     assert user._money == pre_money-price
+
+def test_give_money_expensive(user):
+    price = 100000000
+    with pytest.raises(Exception):
+        user._give_money(money=price)
