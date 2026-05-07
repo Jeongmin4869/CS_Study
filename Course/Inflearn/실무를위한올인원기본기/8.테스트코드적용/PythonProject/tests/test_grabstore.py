@@ -2,6 +2,7 @@ import pytest
 
 from main import GrabStore, Product
 
+# Unit Test
 
 def test_show_product(grab_store):
     #given
@@ -30,6 +31,8 @@ def test_take_out_product(grab_store):
     product = grab_store._take_out_product(product_id)
     assert product == Product(name="키보드", price=30000)
     assert not grab_store._products.get(product_id, None)
+
+# Integration Test
 
 def test_sell_product_well(grab_store):
     product_id = 1

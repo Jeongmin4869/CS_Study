@@ -102,7 +102,7 @@ class User:
     def purchase_product(self, product_id):
         product = self.see_product(product_id=product_id)
         price = product.price
-        if self._check_money(money=price):
+        if self._check_money_enough(price=price):
             self._give_money(money=price)
             try:
                 my_product = self.store.sell_product(product_id=product_id, money=price)

@@ -7,7 +7,7 @@ def grab_store():
     return  GrabStore(
         products={
             1: Product(name="키보드", price=30000),
-            2: Product(name="컴퓨터", price=50000),
+            2: Product(name="컴퓨터", price=5000000),
         }
     )
 
