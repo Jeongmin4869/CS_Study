@@ -1,0 +1,6 @@
+.idea
+.venv
+.claude
+.pytest_cache
+**/__pycache__
+**/*.db
