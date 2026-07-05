@@ -12,5 +12,5 @@ class BaseModel(Model):
 class UserModel(BaseModel):
     name = CharField(unique=True)
 
-    class Mata:
+    class Meta:
         table_name = "users"
