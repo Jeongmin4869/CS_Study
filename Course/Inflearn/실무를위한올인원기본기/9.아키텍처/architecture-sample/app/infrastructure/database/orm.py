@@ -1,7 +1,8 @@
 from peewee import *
 import datetime
 
-db = SqliteDatabase("database.db")
+# DB 의 경로를동적으로 처리해줄 수 있음
+db = SqliteDatabase(None)
 
 
 class BaseModel(Model):
