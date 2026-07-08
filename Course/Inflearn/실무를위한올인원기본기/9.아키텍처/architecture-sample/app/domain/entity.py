@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -12,6 +13,6 @@ class User(Domain):
 
 @dataclass
 class Product(Domain):
-    id: int
-    name: str
-    price: int
+    id: Optional[int] = None
+    name: Optional[str] = None
+    price: Optional[str] = None
