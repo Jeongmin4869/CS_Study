@@ -1,15 +1,20 @@
 from typing import Optional
 
 import uvicorn
+from blib2to3.pygram import initialize
 from fastapi import FastAPI
 
+from app.controller.product import find_product
 from app.controller.user import signup
 from app.infrastructure.database.orm import db, UserModel
 
 
-def create_app():
+def create_app(initialize_db=False):
     app = FastAPI()
-    app.add_api_route(path="/user", methods=["POST"], endpoint=signup)
+    app.add_api_route(path="/users", methods=["POST"], endpoint=signup)
+    app.add_api_route(path="/products", methods=["GET"], endpoint=find_product)
+    if initialize_db:
+        init_db()
     return app
 
 
@@ -19,11 +24,9 @@ def init_db():
     UserModel.create_table()
 
 
-app = create_app()
+app = create_app(initialize_db=True)
 
 if __name__ == "__main__":
-    init_db()
-
     uvicorn.run(
         "app.infrastructure.fastapi.main:app", host="0.0.0.0", port=8000, reload=True
     )
