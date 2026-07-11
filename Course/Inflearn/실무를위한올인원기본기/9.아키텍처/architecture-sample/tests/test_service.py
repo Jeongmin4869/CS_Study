@@ -7,7 +7,7 @@ from tests.fakes import FackUserRepository
 
 @pytest.fixture  # 테스트 함수 수행 전 사전 시행
 def user_service():
-    repository = FackUserRepository()
+    repository = FackUserRepository(users=[])
     user_service = UserService(repository=repository)
     return user_service
 
