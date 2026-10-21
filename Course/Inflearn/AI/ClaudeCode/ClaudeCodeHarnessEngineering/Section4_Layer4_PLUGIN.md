@@ -319,3 +319,91 @@ Marketplace 등록
    ↓
 기능 사용 및 버전 업데이트
 ```
+
+
+# Claude Code Plugin 사용
+
+## 1. Marketplace에서 발견하고 설치하기
+
+1. 카탈로그 등록
+2. 플러그인 설치
+
+### 카탈로그 등록 네 가지 경로
+
+**GitHub**
+
+```bash
+/plugin marketplace add anthropics/claude-plugins-official
+```
+
+**Git URL**
+
+```bash
+/plugin marketplace add https://gitlab.com/team/plugins.git
+```
+
+**로컬 경로**
+
+```bash
+/plugin marketplace add ./my-marketplace
+```
+
+**원격 URL**
+
+```bash
+/plugin marketplace add https://example.com/marketplace.json
+```
+
+## 2. `/plugin` 핵심 명령 8선
+
+| 명령어 | 기능 |
+|---|---|
+| `/plugin marketplace add` | 카탈로그 등록 |
+| `/plugin marketplace list` | 카탈로그 목록 확인 |
+| `/plugin install` | 플러그인 설치 |
+| `/plugin uninstall` | 플러그인 제거 |
+| `/plugin enable` / `/plugin disable` | 플러그인 활성화 / 비활성화 |
+| `/plugin update` | 최신 버전으로 업데이트 |
+| `/plugin list` | 플러그인 상태 확인 |
+| `/reload-plugins` | 플러그인 변경 사항 즉시 적용 |
+
+
+## 3. 설치 범위 네 가지
+
+- **User**: 개인용, 모든 프로젝트에서 사용
+  - `~/.claude/settings.json`
+- **Project**: 팀 공유용, 저장소에 커밋
+  - `.claude/settings.json`
+- **Local**: 개인용 프로젝트 설정
+  - `.claude/settings.local.json`
+- **Managed**: 관리자가 설정하는 범위. 필수 플러그인은 사용자가 비활성화하거나 제거할 수 없음.
+
+## 4. 플러그인 설치 단계
+
+### 1. 마켓플레이스 추가
+
+```bash
+/plugin marketplace add anthropics/claude-plugins-official
+```
+
+### 2. 플러그인 설치
+
+```bash
+/plugin install commit-commands@claude-plugins-official
+```
+
+### 3. 즉시 적용
+
+```bash
+/reload-plugins
+```
+
+재시작 없이 플러그인 변경 사항을 적용
+
+### 4. 플러그인 사용
+
+```bash
+/commit-commands:commit
+```
+
+변경된 파일을 분석해 커밋 메시지를 작성
