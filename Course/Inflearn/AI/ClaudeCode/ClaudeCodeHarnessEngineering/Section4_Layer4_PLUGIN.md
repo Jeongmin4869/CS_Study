@@ -400,6 +400,241 @@ Marketplace 등록
 
 재시작 없이 플러그인 변경 사항을 적용
 
+
+
+# Claude Code Plugin 만들기
+
+## 1. 표준 디렉터리 구조
+
+```
+my-first-plugin/
+├── .claude-plugin/
+│   └── plugin.json          # 플러그인 매니페스트만 존재
+├── skills/
+│   └── hello/
+│       └── SKILL.md         # Skill 지침
+├── agents/
+│   └── code-reviewer.md     # Sub-agent 정의
+├── hooks/
+│   └── hooks.json           # Hook 설정
+├── .mcp.json                # MCP 서버 설정
+├── scripts/
+│   └── format.sh            # Hook에서 호출하는 스크립트
+└── README.md
+```
+
+* `.claude-plugin/`에는 `plugin.json`만 배치
+
+* Skill, Agent, Hook, MCP 설정은 플러그인 루트에 배치
+
+* 디렉터리 이름은 소문자 `skills`, `agents`, `hooks`, `scripts` 사용
+
+## 2. plugin.json
+
+플러그인의 이름과 버전, 설명 등의 메타데이터를 정의하는 매니페스트.
+
+경로: `.claude-plugin/plugin.json`
+
+```
+{
+  "name": "deploy-tools",
+  "version": "1.2.0",
+  "description": "Deployment commands, a review agent, and a status monitor",
+  "author": {
+    "name": "Example Team",
+    "email": "dev@example.com"
+  },
+  "homepage": "https://example.com/docs/deploy-tools",
+  "repository": "https://github.com/example/deploy-tools",
+  "license": "MIT",
+  "keywords": ["deployment", "ci"]
+}
+```
+
+* `name`: 필수. 플러그인 이름
+
+* `version`: 선택. 버전 미지정 시 Git SHA를 기준으로 버전이 식별될 수 있음
+
+* `description`: 플러그인 설명
+
+* `author`: 작성자 정보
+
+* `homepage`: 문서 주소
+
+* `repository`: 저장소 주소
+
+* `license`: 라이선스
+
+* `keywords`: 검색 키워드
+
+
+## 3. SKILL.md
+
+Claude가 실제로 따르는 지시문을 작성하는 파일.
+
+경로: `skills/hello/SKILL.md`
+
+```
+---
+name: hello
+description: Greet the user with a friendly message.
+---
+
+사용자에게 친절하게 인사하고 필요한 작업을 질문한다.
+```
+
+### 주요 내용
+
+* **Frontmatter**: Skill 이름과 설명, 호출 관련 설정
+
+* **본문**: Claude가 실제로 따를 작업 지침
+
+* **자동 호출 시점**: `description`에 어떤 상황에서 사용할지 명시
+
+* `**$ARGUMENTS**`: Skill 호출 시 사용자가 전달한 입력을 받는 자리표시자
+
+예를 들어 Formatter Skill은 코드 포맷팅이 필요한 상황에서 사용하도록 설명을 작성할 수 있음.
+
+```
+---
+name: format
+description: Use proactively after code changes when formatting is needed.
+---
+
+다음 입력을 기준으로 코드 포맷팅을 수행한다.
+
+대상: $ARGUMENTS
+```
+
+Skill 폴더 이름이 `format`이면 다음과 같이 호출.
+
+```
+/deploy-tools:format
+```
+
+플러그인 Skill은 `/플러그인이름:Skill이름` 형식으로 호출.
+
+## 4. Hooks
+
+Hook은 Claude Code의 특정 이벤트에 반응해 명령어나 스크립트를 자동 실행하는 기능.
+
+비결정론적인 AI 작업에 정해진 실행 흐름을 추가해 자동화를 구현하는 핵심 요소.
+
+### hooks.json 예시
+
+경로: `hooks/hooks.json`
+
+```
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/format.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+* `PostToolUse`: 도구 실행 후 발생하는 이벤트
+
+* `matcher`: `Write` 또는 `Edit` 도구 실행에 반응
+
+* `type`: 실행 방식
+
+* `command`: 실행할 스크립트 경로
+
+
+### 스크립트 실행 권한
+
+Hook이 실행되지 않을 때는 Hook 설정과 스크립트 경로, 실행 권한을 확인.
+
+```
+chmod +x scripts/format.sh
+```
+
+`hooks.json`에 지정한 스크립트에도 실행 권한이 필요함.
+
+### `${CLAUDE_PLUGIN_ROOT}`를 사용하는 이유
+
+플러그인은 설치 위치와 업데이트에 따라 실제 경로가 달라질 수 있음. 따라서 고정 경로 대신 환경변수를 사용.
+
+* `${CLAUDE_PLUGIN_ROOT}`: 플러그인의 설치 디렉터리
+
+* `${CLAUDE_PLUGIN_DATA}`: 플러그인 업데이트 후에도 유지되는 데이터 디렉터리
+
+예를 들어 `${CLAUDE_PLUGIN_ROOT}/scripts/format.sh`는 플러그인 설치 위치를 기준으로 스크립트를 찾음.
+
+상태 데이터나 의존성처럼 업데이트 후에도 유지해야 하는 데이터는 `${CLAUDE_PLUGIN_DATA}`에 저장.
+
+## 5. 내 마켓플레이스 배포
+
+### 자체 마켓플레이스 작성
+
+하나의 저장소에 여러 플러그인을 모아두고, 루트의 `.claude-plugin/marketplace.json`에서 카탈로그를 정의.
+
+```
+my-marketplace/
+├── .claude-plugin/
+│   └── marketplace.json     # 마켓플레이스 카탈로그
+├── deploy-helper/
+│   ├── .claude-plugin/
+│   │   └── plugin.json
+│   ├── skills/
+│   └── hooks/
+└── code-reviewer/
+    ├── .claude-plugin/
+    │   └── plugin.json
+    └── agents/
+```
+
+### marketplace.json
+
+경로: `.claude-plugin/marketplace.json`
+
+```
+{
+  "name": "my-marketplace",
+  "description": "Plugins for my team",
+  "owner": {
+    "name": "Your Name"
+  },
+  "plugins": [
+    {
+      "name": "deploy-helper",
+      "source": "./deploy-helper",
+      "description": "Deployment helper plugin"
+    },
+    {
+      "name": "code-reviewer",
+      "source": "./code-reviewer",
+      "description": "Code review plugin"
+    }
+  ]
+}
+```
+
+* `name`: 마켓플레이스 이름
+
+* `description`: 마켓플레이스 설명
+
+* `owner`: 소유자 정보
+
+* `plugins`: 배포할 플러그인 목록
+
+* `source`: 마켓플레이스 루트 기준 플러그인 경로
+
+각 플러그인의 `name`은 해당 플러그인의 `plugin.json`에 정의한 이름과 일치해야 함.
+
+
+
+
 ### 4. 플러그인 사용
 
 ```bash
