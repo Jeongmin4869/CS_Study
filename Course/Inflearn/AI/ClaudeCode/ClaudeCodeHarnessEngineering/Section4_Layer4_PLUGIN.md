@@ -641,4 +641,94 @@ my-marketplace/
 /commit-commands:commit
 ```
 
-변경된 파일을 분석해 커밋 메시지를 작성
+변경된 파일을 분석해 커밋 메시지를 작성   
+   
+github에 push후 팀에게 한줄만 안내   
+```
+/plugin marketplace add my-org/my-marketplace		
+```
+
+비공개로 만들어 사용하고 싶은경우   
+비공개 repository를 생성하거나 사내 githost를 사용    
+
+
+
+
+
+## 6. 실전 팁 & 흔한 실수
+
+### 실전 팁
+
+**① `--plugin-dir`로 로컬 테스트**
+
+마켓플레이스에 등록하거나 설치하지 않고 로컬 플러그인 테스트
+
+```bash
+claude --plugin-dir ./my-plugin
+```
+
+- 플러그인 루트 디렉터리 지정
+- 현재 세션에서 로컬 플러그인 로드
+- 수정 사항 반영 시 `/reload-plugins` 실행
+
+**② 개발 중에는 버전 생략**
+
+- 개발 중에는 `plugin.json`의 `version` 필드를 생략할 수 있음
+- 배포 및 버전 관리 시 버전 정보 명시 권장
+
+**③ `--debug`와 `claude plugin validate` 활용**
+
+```bash
+claude --debug
+```
+
+- 플러그인 로딩 및 실행 관련 디버그 정보 확인
+
+```bash
+claude plugin validate ./my-plugin
+```
+
+- 플러그인 매니페스트 및 구성 파일 검증
+- Frontmatter와 경로 관련 오류 확인
+
+**④ `userConfig.sensitive` 설정**
+
+- API 키, 토큰 등 민감한 설정값에 `sensitive` 속성 지정
+- 민감한 값이 일반 텍스트로 노출되지 않도록 설정
+
+### 흔한 실수
+
+**① `.claude-plugin/` 디렉터리에 구성 요소 배치**
+
+- `.claude-plugin/`: `plugin.json` 매니페스트 위치
+- `skills/`, `agents/`, `hooks/` 등의 구성 요소: 플러그인 루트 디렉터리에 배치
+- 잘못된 위치에 구성 요소를 배치하면 플러그인 로딩 실패 가능
+
+**② Hook 실행 권한 누락**
+
+- 실행 스크립트에 실행 권한이 없으면 Hook 실행 실패 가능
+- 필요한 경우 실행 권한 부여
+
+```bash
+chmod +x ./scripts/hook.sh
+```
+
+**③ 절대경로 사용**
+
+- 개발 환경의 절대경로를 사용하면 다른 환경에서 경로 오류 발생 가능
+- `${CLAUDE_PLUGIN_ROOT}`를 사용해 플러그인 루트 기준 경로 지정
+
+```json
+{
+  "type": "command",
+  "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/hook.sh\""
+}
+```
+
+**④ `CHANGELOG` 누락**
+
+- 버전별 변경 사항 기록 누락
+- 업데이트 내용과 수정 사항을 추적하기 어려움
+- 배포 시 `CHANGELOG.md`에 변경 내역 기록 권장
+
+
