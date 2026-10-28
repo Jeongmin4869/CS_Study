@@ -91,3 +91,202 @@ Claude Code가 실행되는 동안 여러 시점에 Hook을 삽입 가능. 특�
 ### 설정 확인
 
 Claude Code에서 `/hooks` 명령어를 입력하면 현재 설정된 Hook을 이벤트별로 확인 가능.
+
+## 6. 실습 1 — 작업 완료 알림 받기
+
+Claude Code가 입력을 기다릴 때마다 데스크톱 알림을 보내는 Hook. 다른 작업을 하면서 Claude Code를 계속 모니터링할 필요가 없음.
+
+### 설정 파일: `~/.claude/settings.json`
+
+```json
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude가 준비됐어요!\" with title \"Claude Code\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+* `Notification`: 알림 이벤트 발생 시 Hook 실행
+* `matcher`: 특정 조건을 지정하지 않는 빈 문자열
+* `type: command`: 셸 명령어 실행
+* `osascript`: macOS에서 데스크톱 알림 표시
+
+**Linux용 명령어**
+
+```bash
+notify-send 'Claude Code' 'Claude가 준비됐어요!'
+```
+
+### 설정 및 확인 순서
+
+1. 위 설정을 `~/.claude/settings.json`에 추가
+2. Claude Code에서 `/hooks` 입력 후 `Notification` 아래에 등록된 Hook 확인
+3. Claude에게 작업을 지시한 뒤 다른 탭으로 이동하여 알림 수신 확인
+
+## 7. 실습 2 — 자동 코드 포매터
+
+Claude Code가 파일을 편집한 후 Prettier를 자동 실행하여 코드 스타일을 일관되게 유지하는 Hook.
+
+### 설정 파일: `.claude/settings.json`
+
+프로젝트 루트에 설정.
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | xargs npx prettier --write"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### 주요 설정 설명
+
+* `PostToolUse`: 도구 실행이 끝난 후 Hook 실행
+* `matcher: Edit|Write`: `Edit` 또는 `Write` 도구 실행 후에만 적용
+* `jq -r '.tool_input.file_path'`: stdin으로 전달된 JSON에서 파일 경로 추출
+* `xargs npx prettier --write`: 추출한 파일 경로를 Prettier에 전달하여 포매팅
+
+### jq란?
+
+Hook은 이벤트 정보를 JSON 형태로 stdin에 전달. `jq`는 JSON에서 원하는 값을 추출하는 명령줄 도구.
+
+### 왜 `PostToolUse`인가?
+
+파일 편집이 완료된 이후에 포매팅해야 하기 때문. `PreToolUse`를 사용하면 Claude의 편집이 아직 적용되지 않은 파일을 포매팅하게 될 수 있음.
+
+## 8. 실습 3 — 파일 보호 가드레일
+
+`.env`, `package-lock` 등 보호 대상 파일의 편집을 사전에 차단하는 Hook.
+
+### ① 보호 스크립트 작성
+
+파일 경로: `.claude/hooks/protect-files.sh`
+
+```bash
+#!/bin/bash
+
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path')
+
+PROTECTED=(".env" "package-lock.json")
+
+for pattern in "${PROTECTED[@]}"; do
+  if [[ "$FILE_PATH" == *"$pattern"* ]]; then
+    echo "차단: $pattern 수정은 허용되지 않습니다." >&2
+    exit 2
+  fi
+done
+
+exit 0
+```
+
+**주요 코드 설명**
+
+* `#!/bin/bash`: Bash 스크립트 실행 지정
+* `INPUT=$(cat)`: stdin으로 전달된 JSON 전체를 읽음
+* `jq -r '.tool_input.file_path'`: 편집 대상 파일 경로 추출
+* `PROTECTED`: 수정 금지 파일 패턴 목록
+* `for pattern in ...`: 보호 대상 패턴을 하나씩 검사
+* `exit 2`: 편집 차단 신호 반환
+* `exit 0`: 차단 대상이 아니므로 진행 허용
+
+※ 강의 자료의 코드 이미지는 일부 글자가 잘려 있어, 위 스크립트는 보이는 구조를 바탕으로 실행 가능한 형태로 정리한 코드. 실제 적용 전 보호할 파일 패턴과 메시지 확인 필요.
+
+### ② 실행 권한 부여
+
+```bash
+chmod +x .claude/hooks/protect-files.sh
+```
+
+`chmod +x`를 사용해 스크립트에 실행 권한 부여.
+
+### ③ `.claude/settings.json`에 등록
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-files.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+* `PreToolUse`: 파일 편집 도구 실행 전 검사
+* `matcher: Edit|Write`: 파일 편집 도구에 적용
+* `CLAUDE_PROJECT_DIR`: 프로젝트 디렉터리를 기준으로 스크립트 경로 지정
+
+### 차단 시 동작
+
+`exit 2`로 종료하면 Claude Code가 작업을 차단하고 stderr 메시지를 피드백으로 전달. Claude는 전달받은 이유를 참고해 접근 방식을 바꾸어 다시 시도할 수 있음.
+
+## 9. Hook과 Claude의 소통 방식
+
+Hook은 Claude Code에서 발생한 이벤트 데이터를 전달받아 스크립트를 실행하고, 실행 결과를 반환하는 구조.
+
+### 동작 흐름
+
+`이벤트 발생 → JSON 데이터 전달(stdin) → Hook 스크립트 실행 → 종료 코드 및 출력(stdout/stderr) → Claude가 결과 처리`
+
+### stdin으로 전달되는 JSON 예시
+
+`PreToolUse` 이벤트에서 전달되는 데이터 구조.
+
+```json
+{
+  "session_id": "abc123",
+  "cwd": "/Users/dev/myproject",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "npm test"
+  }
+}
+```
+
+| 필드                | 의미                             |
+| ----------------- | ------------------------------ |
+| `session_id`      | 세션 고유 ID                       |
+| `cwd`             | 현재 작업 디렉터리                     |
+| `hook_event_name` | 발생한 Hook 이벤트 이름                |
+| `tool_name`       | 실행 대상 도구                       |
+| `tool_input`      | 도구에 전달되는 입력값. 예시에서는 실행할 명령어 포함 |
+
+### 종료 코드에 따른 동작
+
+| 종료 코드    | 동작                                  |
+| -------- | ----------------------------------- |
+| `exit 0` | 진행 허용. stdout 출력은 Claude의 컨텍스트에 추가  |
+| `exit 2` | 작업 차단. stderr 메시지가 Claude에 피드백으로 전달 |
+| 기타 종료 코드 | 작업은 진행되며 오류 공지가 트랜스크립트에 표시          |
+
+**핵심 포인트:** Hook은 이벤트에 따라 명령을 실행할 뿐 아니라, 종료 코드와 출력 메시지를 통해 Claude Code의 작업 흐름을 제어할 수 있음.
+
