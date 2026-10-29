@@ -290,3 +290,39 @@ Hook은 Claude Code에서 발생한 이벤트 데이터를 전달받아 스크�
 
 **핵심 포인트:** Hook은 이벤트에 따라 명령을 실행할 뿐 아니라, 종료 코드와 출력 메시지를 통해 Claude Code의 작업 흐름을 제어할 수 있음.
 
+## 10. 구조화된 JSON 출력으로 정밀 제어
+
+종료 코드만으로는 기본적인 허용·차단 제어가 가능하지만, JSON 출력을 활용하면 도구 실행에 대한 결정을 더 세밀하게 제어 가능.
+
+### PreToolUse — 거부 사유 전달
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "grep 대신 rg(ripgrep)를 사용하세요"
+  }
+}
+```
+
+* `hookSpecificOutput`: 특정 Hook 이벤트에 대한 추가 출력 정보
+* `hookEventName`: JSON 출력을 적용할 이벤트 이름
+* `permissionDecision`: 도구 실행에 대한 권한 결정
+* `permissionDecisionReason`: 결정 사유를 전달하는 메시지
+
+### `permissionDecision` 값
+
+| 값 | 동작 |
+|---|---|
+| `allow` | 권한 확인 프롬프트를 건너뛰고 허용 |
+| `deny` | 도구 호출 취소 및 거부 사유 전달 |
+| `ask` | 사용자에게 권한 확인 프롬프트 표시 |
+
+### 동작 방식
+
+`deny`와 거부 사유를 함께 반환하면 Claude가 해당 이유를 참고해 접근 방식을 수정 가능.
+
+예를 들어 `grep` 대신 `rg`를 사용하도록 안내하면, Claude가 전달받은 사유에 따라 명령어를 변경할 수 있음.
+
+**주의:** JSON 출력으로 제어할 때는 종료 코드와 JSON의 역할을 구분해야 함. 강의안에서는 `exit 2`와 JSON 출력을 혼용하지 않도록 안내하며, `exit 2`로 종료하면 Claude Code가 JSON 출력을 무시함.
