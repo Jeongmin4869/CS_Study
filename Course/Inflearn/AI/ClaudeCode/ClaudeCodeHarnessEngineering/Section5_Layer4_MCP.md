@@ -152,3 +152,99 @@ MCP Server가 Client에 제공하는 주요 기능이다.
 Tools는 실행이나 외부 시스템 변경을 수반할 수 있지만, Resources는 주로 데이터를 제공하고 Prompts는 작업을 위한 프롬프트 템플릿을 제공한다.
 
 
+## 6. MCP 연결 방법 — 세 가지 전송 방식
+
+MCP Server와 통신하는 방식은 크게 Stdio, SSE, HTTP로 구분된다.
+
+### 6.1. Stdio — 로컬 프로세스 방식
+
+컴퓨터에서 직접 실행되는 MCP Server 프로세스와 표준 입력(stdin), 표준 출력(stdout)을 통해 통신하는 방식이다.
+
+**적합한 경우**
+- 로컬 DB 또는 파일 시스템 접근
+- 자체 제작 스크립트 실행
+- 인터넷 없이 동작해야 하는 경우
+
+**등록 명령어**
+\```bash
+claude mcp add --transport stdio myserver -- npx -y server
+\```
+
+### 6.2. SSE — 구형 원격 통신 방식
+
+Server-Sent Events 기반의 원격 통신 방식이다.
+
+**주의**
+- 공식적으로 deprecated 상태
+- 새로운 통합에는 HTTP 방식 사용 권장
+- 기존 SSE 서버와의 호환이 필요한 경우 사용
+
+### 6.3. HTTP — 원격 서버 방식
+
+클라우드 등 원격 환경에서 실행되는 MCP Server에 연결하는 방식이다.
+
+**적합한 경우**
+- SaaS 도구 연동 (GitHub, Sentry 등)
+- 팀 공용 서버
+- OAuth 인증이 필요한 서비스
+
+**등록 명령어**
+\```bash
+claude mcp add --transport http myserver https://mcp.example.com
+\```
+
+## 7. Stdio MCP Server 연결 — PostgreSQL
+
+PostgreSQL MCP Server를 등록하고, Claude Code에서 데이터 조회를 요청하는 과정이다.
+
+### 7.1. MCP Server 등록
+
+\```bash
+claude mcp add --transport stdio db -- npx -y @bytebase/dbhub \
+  --dsn "postgresql://readonly:pass@prod.db.com:5432/analytics"
+\```
+
+**명령어 구성**
+- `claude mcp add`: MCP Server 등록
+- `--transport stdio`: Stdio 방식으로 연결
+- `db`: MCP Server 등록 이름
+- `--`: Claude Code 옵션과 서버 실행 명령 구분
+- `npx -y @bytebase/dbhub`: 실제 실행할 MCP Server 프로그램
+- `--dsn`: PostgreSQL 데이터베이스 주소 및 접속 정보
+
+PostgreSQL 연결 문자열 형식:
+
+\```text
+postgresql://사용자명:비밀번호@호스트:포트/데이터베이스명
+\```
+
+### 7.2. 연결 상태 확인
+
+Claude Code 내에서 다음 명령어를 실행한다.
+
+\```text
+/mcp
+\```
+
+`/mcp` 명령어로 등록된 MCP Server의 연결 상태를 확인할 수 있다.
+
+### 7.3. 자연어로 데이터 조회
+
+MCP Server가 정상적으로 연결되면 자연어로 데이터 조회를 요청할 수 있다.
+
+예시:
+
+\```text
+이번 달 총 매출은 얼마야?
+\```
+
+Claude Code는 MCP Server가 제공하는 데이터베이스 도구를 사용해 요청을 처리한다.
+
+**팁 — `--` 구분자**
+
+`--` 뒤에 오는 내용은 실제 MCP Server 실행 프로그램에 전달되는 영역이다.
+
+- `--` 앞: Claude Code의 옵션과 서버 이름
+- `--` 뒤: MCP Server 실행 명령과 해당 프로그램에 전달할 인수
+
+Claude Code 옵션과 서버 옵션이 충돌하지 않도록 구분하는 역할을 한다.
