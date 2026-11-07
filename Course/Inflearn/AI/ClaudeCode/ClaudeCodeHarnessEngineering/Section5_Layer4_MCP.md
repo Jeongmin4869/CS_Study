@@ -541,3 +541,186 @@ MCP Resource는 서버가 제공하는 데이터나 컨텍스트를 파일처럼
 |---|---|
 | `MCP_TIMEOUT` | MCP Server 시작 대기 시간 설정 (ms) |
 | `MAX_MCP_OUTPUT_TOKENS` | MCP 도구 응답의 최대 출력 토큰 수 설정 |
+
+
+## 14. Advanced 패턴
+
+### 14.1 Tool Search — 토큰 소비 문제 해결
+
+#### 기존 방식의 문제
+
+MCP 서버를 많이 연결할수록 대화 시작 전에 많은 토큰이 소비된다.
+
+- 세션 시작 시 모든 도구 정의를 한꺼번에 로드
+- 도구 정의가 컨텍스트 윈도우를 차지해 실제 대화 공간 축소
+- MCP 서버가 많아질수록 사전 로드 방식의 한계가 커짐
+
+#### Tool Search 방식
+
+기존 방식과 달리 필요한 도구를 검색한 후 사용하는 방식이다.
+
+1. 검색 도구만 로드
+2. 필요한 도구를 검색
+3. 실제 사용할 도구 정의만 컨텍스트에 진입
+
+도구 정의를 미리 모두 로드하지 않아 컨텍스트 낭비를 줄일 수 있다.
+
+#### Tool Search 설정
+
+`ENABLE_TOOL_SEARCH` 환경변수로 설정한다.
+
+| 값 | 동작 |
+|---|---|
+| 미설정 | 기본값 적용 |
+| `true` | 강제 지연 로드 (Vertex AI 포함) |
+| `auto` | 기본 임계값 모드 (10%) |
+| `auto:5` | 사용자 지정 임계값 (5%) |
+| `false` | 비활성화, 모든 도구 사전 로드 |
+
+**터미널에서 실행**
+
+```bash
+ENABLE_TOOL_SEARCH=auto:5 claude
+```
+
+**settings.json에 영구 설정**
+
+```json
+{
+  "env": {
+    "ENABLE_TOOL_SEARCH": "auto"
+  }
+}
+```
+
+**ToolSearch 도구만 선택적으로 비활성화**
+
+```json
+{
+  "permissions": {
+    "deny": ["ToolSearch"]
+  }
+}
+```
+
+- Haiku 모델은 ToolSearch를 지원하지 않음
+
+#### MCP 서버 작성자를 위한 서버 지침 작성법
+
+Tool Search가 활성화되면 서버 지침(Instructions)이 중요하다. 다음 내용을 명확하게 작성해야 한다.
+
+1. **작업 범주**: 도구가 처리하는 작업 종류
+2. **검색 시점**: Claude가 해당 도구를 찾아야 하는 상황
+3. **주요 기능 목록**: 핵심 기능 5~10개 정도를 간결하게 설명
+
+도구 설명과 서버 지침은 각각 2KB 제한이 있으므로 중요한 정보를 앞부분에 배치하는 것이 좋다.
+
+#### Tool Search 효과
+
+- 세션 시작 시 모든 도구 정의를 미리 로드하지 않음
+- 실제 사용하는 도구만 컨텍스트에 진입
+- MCP 서버를 추가해도 컨텍스트 사용량 증가를 최소화
+
+---
+
+### 14.2 Programmatic Tool Calling
+
+Claude가 코드를 작성해 여러 도구를 직접 조율하는 방식이다.
+
+#### 기존 방식의 문제
+
+- 도구 호출마다 중간 결과가 컨텍스트에 쌓임
+- 대용량 로그 파일이나 수천 건의 데이터가 컨텍스트를 차지
+- 매 도구 호출마다 모델 추론이 발생해 지연 증가
+
+#### Programmatic 방식
+
+Claude가 Python 코드로 여러 도구를 조율하고, 중간 결과는 코드 안에서 처리한 뒤 최종 결과만 컨텍스트에 반환한다.
+
+#### 사용 예시
+
+```python
+# 팀원 조회
+team = await get_team_members("engineering")
+
+# 병렬로 팀원별 지출 조회
+expenses = await asyncio.gather(
+    *[get_expenses(m["id"], "Q3") for m in team]
+)
+
+# 예산 초과 팀원 확인
+exceeded = []
+
+for member, exp in zip(team, expenses):
+    total = sum(e["amount"] for e in exp)
+
+    if total > budget:
+        exceeded.append(member)
+
+# 최종 결과만 반환
+print(json.dumps(exceeded))
+```
+
+- 중간 결과를 컨텍스트에 전달하지 않아 토큰 절감
+- 여러 도구를 병렬 실행해 처리 시간 단축
+
+**적합한 상황**
+- 여러 도구를 함께 사용해야 할 때
+- 여러 엔드포인트를 한 번에 확인할 때
+- 대규모 데이터에서 집계 결과만 필요한 경우
+
+단순 조회, 소규모 데이터 처리, 적은 수의 엔드포인트 확인에는 기존 방식으로도 충분하다. 이런 경우에는 토큰 절감 효과가 크지 않다.
+
+---
+
+### 14.3 Tool Input Examples
+
+#### JSON Schema만으로 부족한 경우
+
+JSON Schema로 데이터 타입을 정의하더라도 구체적인 입력 형식까지 명확하게 전달하기 어려울 수 있다.
+
+예를 들어 다음과 같은 정의만으로는 `due_date`의 날짜 형식이나 `reporter.id`의 식별자 형식을 알기 어렵다.
+
+```json
+{
+  "name": "create_ticket",
+  "properties": {
+    "due_date": {
+      "type": "string"
+    },
+    "reporter": {
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+```
+
+#### input_examples 추가
+
+`input_examples`에 실제 입력 데이터 예시를 추가해 구체적인 형식을 전달할 수 있다.
+
+```json
+{
+  "name": "create_ticket",
+  "input_examples": [
+    {
+      "title": "Login page 500 error",
+      "properties": "critical",
+      "labels": ["bug", "auth"],
+      "reporter": {
+        "id": "USR-12345"
+      },
+      "due_date": "2024-11-06"
+    },
+    {
+      "title": "Add dark mode"
+    }
+  ]
+}
+```
+
+실제 데이터 형식을 예시로 제공하면 Claude가 입력 패턴을 파악하고 도구를 더 정확하게 호출하는 데 도움이 된다.
